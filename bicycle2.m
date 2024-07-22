@@ -27,8 +27,10 @@ global m Iz Lf Lr Cf Cr mu
 
 %  Compute slip angle of front and rear tires.
 %  Here approximation of tan(a) = a is not used.
-alp_f = atan2(x(2)+Lf*x(3),x(1))-u;
-alp_r = atan2(x(2)-Lr*x(3),x(1));
+% alp_f = atan2(x(2)+Lf*x(3),x(1))-u;
+% alp_r = atan2(x(2)-Lr*x(3),x(1));
+alp_f = (x(2)+Lf*x(3))/x(1)-u;
+alp_r = (x(2)-Lr*x(3))/x(1);
 
 fyf = - mu * Cf * alp_f;
 fyr = - mu * Cr * alp_r;
@@ -49,4 +51,6 @@ dx(2) = (Fyf + Fyr)/m - x(1)*x(3);
 dx(3) = (Lf*Fyf - Lr*Fyr)/Iz;
 dx(4) = x(1)*cos(x(6)) - x(2)*sin(x(6));
 dx(5) = x(1)*sin(x(6)) + x(2)*cos(x(6));
+% dx(6) = x(3);
+theta = atan2(Lf+Lr,Lr*tan(u));
 dx(6) = x(3);
