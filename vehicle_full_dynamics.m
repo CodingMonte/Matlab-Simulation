@@ -29,8 +29,8 @@ global m Iz Lf Lr Cf Cr mu
 %  Here approximation of tan(a) = a is not used.
 % alp_f = atan2(x(2)+Lf*x(3),x(1))-u;
 % alp_r = atan2(x(2)-Lr*x(3),x(1));
-alp_f = (x(2)+Lf*x(3))/x(1)-u;
-alp_r = (x(2)-Lr*x(3))/x(1);
+alp_f = atan2(x(2)+Lf*x(3),x(1))-u;
+alp_r = atan2(x(2)-Lr*x(3),x(1));
 
 fyf = - mu * Cf * alp_f;
 fyr = - mu * Cr * alp_r;
