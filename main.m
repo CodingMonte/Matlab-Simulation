@@ -1,18 +1,18 @@
-clc;
+%clc;
 close all;
 clear;
 
 % Generation of Desired Path
 % time
 t0=0;
-ts=0.001;
-tf=40;
+ts=0.01;
+tf=50;
 t=t0:ts:tf;
 iter=fix((tf-t0)/ts); %1501
 
 syms a b c d e f
 
-o = 4;
+o = 3.7;
 t1 = 12;
 T = t1 + o;
 
@@ -21,7 +21,7 @@ T2 = 24;
 eq0 = a*t1^5 + b*t1^4 + c*t1^3 + d*t1^2 + e*t1 + f == 0;
 eq1 = 5*a*t1^4 + 4*b*t1^3 + 3*c*t1^2 + 2*d*t1 + e == 0; % y'(T) = 0
 eq2 = 20*a*t1^3 + 12*b*t1^2 + 6*c*t1 + 2*d == 0; % y''(T) = 0
-eq3 = a*T^5 + b*T^4 + c*T^3 + d*T^2 + e*T + f == -3; % y(T) = -3.75
+eq3 = a*T^5 + b*T^4 + c*T^3 + d*T^2 + e*T + f == -3.5; % y(T) = -3.75
 eq4 = 5*a*T^4 + 4*b*T^3 + 3*c*T^2 + 2*d*T + e == 0; % y'(T) = 0
 eq5 = 20*a*T^3 + 12*b*T^2 + 6*c*T + 2*d == 0; % y''(T) = 0
 
@@ -41,9 +41,9 @@ F = double(solution.f);
 y_ref(t <= t1) = 0;
 y_ref(t1 < t & t < T) = A*t(t1 < t & t < T).^5 + B*t(t1 < t & t < T).^4 + C*t(t1 < t & t < T).^3 + D*t(t1 < t & t < T).^2 + E*t(t1 < t & t < T) + F;
 
-y_ref(T <= t & t <= T2) = -3;
+y_ref(T <= t & t <= T2) = -3.5;
 y_ref(T2 < t & t <= T2 + o) = -(A*(t(T2 < t & t <= T2 + o)-T2+t1).^5 + B*(t(T2 < t & t <=T2 + o)-T2+t1).^4 ...
-    + C*(t(T2 < t & t <=T2 + o)-T2+t1).^3 + D*(t(T2 < t & t <=T2 + o)-T2+t1).^2 + E*(t(T2 < t & t <=T2 + o)-T2+t1) + F)-3;
+    + C*(t(T2 < t & t <=T2 + o)-T2+t1).^3 + D*(t(T2 < t & t <=T2 + o)-T2+t1).^2 + E*(t(T2 < t & t <=T2 + o)-T2+t1) + F)-3.5;
 y_ref(T2 + o < t) = 0;
 
 % y_ref = 5*sin(0.5*t);
@@ -99,11 +99,11 @@ z1_hat_dot = [0 0];
 zd = zeros(1,iter+1);
 
 % Control gain
-k1 = 5;
-k2 = 30;
+k1 = 1.5;
+k2 = 60;
 
 % Observer gain
-l1 = 10;     
+l1 = 20;     
 l2 = 30;
 p  = 0;     % Output feedback intial condition
 
@@ -147,26 +147,27 @@ d       = 0.7*g*u_bar;
 % Initial condition of signals
 varphi  = 0;
 beta    = 0;
-rho     = 4;
+rho     = 3;
 lambda  = 1;
-rho_inf = 0.05;
+rho_inf = 0.05;%%c
 gamma1  = 10;
 gamma2  = 2;
 gamma3  = 5;
 rho_dot = 0;
+phase1 = 0.25;
+phase2 = 0.17;
+phase3 = 0.15;
 
 for n = 1:iter
     
-    % if n*ts == 14
-    %     mu = 0.15;
-    % elseif n*ts == 22
-    %     mu = 0.85;
-    % elseif n*ts == 26
-    %     mu = 0.5;
-    % end
     if n*ts == 13
-        mu = 0.15;
+        mu = phase1;
+    elseif n*ts == 22
+        mu = phase2;
+    elseif n*ts == 26
+        mu = phase3;
     end
+
     err(n,1) = x(n,5) - y_ref(n);               % position error
     err(n,2) = x(n,2) + x(n,1)*(x(n,6)-psi_ref(n));
     err(n,3) = x(n,6) - psi_ref(n);             % heading angle error
@@ -178,7 +179,9 @@ for n = 1:iter
     xi(n)           = (z_hat(n,1) - zd(n) - varphi(n))/rho(n);
     e1(n)           = log((1 + xi(n))/(1 - xi(n))) - zeta(n);
     z1_tilda(n)     = z(n,1) - z_hat(n,1);
-    alpha(n)        = -l1*z1_tilda(n) - (1-xi(n)^2)/2*k1*rho(n)*log((1 + xi(n))/(1 - xi(n)));
+    % alpha(n)        = -l1*z1_tilda(n) - (1-xi(n)^2)/2*k1*rho(n)*log((1 + xi(n))/(1 - xi(n)));
+    k1(n) = rho(n)/2 + 1;
+    alpha(n)        = -l1*z1_tilda(n) - (1-xi(n)^2)/2*k1(n)*log((1 + xi(n))/(1 - xi(n)));
     z_hat(n,2)      = p(n) + l2*z1_tilda(n);
     e2(n)           = z_hat(n,2) - alpha_f(n) - beta(n);
     rho_dot(n)      = -lambda*(rho(n) - rho_inf) + gamma1*(abs(varphi(n)));
@@ -233,7 +236,7 @@ for n = 1:iter
     % derivative of signal
     varphi_dot(n)   = -gamma2*varphi(n) + beta(n);
     beta_dot(n)     = -gamma3*beta(n) + g0*(sat(n) - u(n));
-    zeta_dot(n)     = -k1*zeta(n) + W2_hat(n,:) * S2(n,:)';
+    zeta_dot(n)     = -k1(n)*zeta(n)/rho(n) + W2_hat(n,:) * S2(n,:)';
      
     
     % runge-kutta for signal
@@ -259,32 +262,40 @@ end
 
 %-----------------------plot---------------------------%
 
-figure('Position', [100, 100, 1100, 400]);
+figure('Position', [100, 100, 1200, 400]);
 
 plot(x(1:iter,4) , x(1:iter,5),'r','LineWidth', 1);
 hold on
 plot(x(1:iter,4), y_ref(1:iter),'k:','LineWidth', 1.5);
 hold on
-plot([x(14/ts,4) x(14/ts,4)] , [-3.5 0.5],'k','LineWidth', 0.5);
+plot([x(14/ts,4) x(14/ts,4)] , [-4 -3.6],'k','LineWidth', 2);
 hold on
-plot([x(22/ts,4) x(22/ts,4)] , [-3.5 0.5],'k','LineWidth', 0.5);
+plot([x(22/ts,4) x(22/ts,4)] , [-4 -3.6],'k','LineWidth', 2);
 hold on
-plot([x(26/ts,4) x(26/ts,4)] , [-3.5 0.5],'k','LineWidth', 0.5);
+plot([x(26/ts,4) x(26/ts,4)] , [-4 -3.6],'k','LineWidth', 2);
 hold off
 
 xlabel('X(m)');
 ylabel('Y(m)');
-legend('actual','reference','Location', 'southeast','fontsize',12);
+h_legend = legend('actual','reference','Location', 'southeast','fontsize',12);
 legend('box','off');
-axis([0 1100 -3.5 0.5])
-text(x(3/ts,4)-5,-3.25,'\mu = 0.85','fontsize',13)
-text(x(28/ts,4)-5,-3.25,'\mu = 0.5','fontsize',13)
-text(x(16/ts,4)-5,-3.25,'\mu = 0.15','fontsize',13)
-text(x(22.5/ts,4)-5,-3.25,'\mu = 0.85','fontsize',13)
+% legend의 현재 위치 가져오기
+legend_pos = get(h_legend, 'Position');
+
+% Y축 위치를 살짝 위로 이동 (Position: [left bottom width height])
+legend_pos(2) = legend_pos(2) + 0.05; % bottom 값을 증가시켜 위로 이동
+
+% 변경된 위치 적용
+set(h_legend, 'Position', legend_pos);
+axis([0 1100 -4 0.5])
+text(x(6/ts,4)-5,-3.75,sprintf('\\mu = %.2f', 0.85),'fontsize',13)
+text(x(16.5/ts,4)-5,-3.75,sprintf('\\mu = %.2f', phase1),'fontsize',13)
+text(x(22.7/ts,4)-5,-3.75,sprintf('\\mu = %.2f', phase2),'fontsize',13)
+text(x(31/ts,4)-5,-3.75,sprintf('\\mu = %.2f', phase3),'fontsize',13)
 
 figure('Position', [100, 100, 1200, 400]);
 
-% plot(x(1:iter,4), x(1:iter,5),'g','LineWidth', 2);
+plot(x(1:iter,4), x(1:iter,5),'g','LineWidth', 2);
 plot(t(1:iter) , x(1:iter,6)*180/pi,'b','LineWidth', 1);
 hold on
 plot(t(1:iter), psi_ref(1:iter)*180/pi,'black--','LineWidth', 1);
@@ -294,8 +305,8 @@ xlabel('angle(m)');
 ylabel('time(s)');
 legend('\psi','\psi_{Ref}');
 title('Tracking of Yaw angle');
-
-figure('Position', [100, 100, 1200, 400]);
+% 
+figure
 
 plot(t(1:10:iter),rho(1:10:iter),'b');
 hold on;
@@ -326,15 +337,20 @@ hold off;
 
 xlabel('time(sec)');
 ylabel('steering angle(\circ)');
-legend('u','\Phi(u)','Location', 'southeast','fontsize',14);
+legend('\delta','\Phi(\delta)','Location', 'southeast','fontsize',14);
 legend('box','off')
 axes('position',[0.2 0.25 0.4 0.3])
 box on
-plot(t(14000:24000),u(14000:24000)*180/pi,'k:','LineWidth',1.5)
+plot(t(1400:2400),u(1400:2400)*180/pi,'k:','LineWidth',1.5)
 hold on
-plot(t(14000:24000),sat(14000:24000)*180/pi,'r')
+plot(t(1400:2400),sat(1400:2400)*180/pi,'r')
 hold off
 axis([14 24 -10 10])
+plot(t(2300:3400),u(2300:3400)*180/pi,'k:','LineWidth',1.5)
+hold on
+plot(t(2300:3400),sat(2300:3400)*180/pi,'r')
+hold off
+axis([23 34 -10 10])
 
 figure
 
@@ -359,15 +375,15 @@ xlabel('time(sec)');
 ylabel('tracking error');
 legend('$y$ - $y_{d}$','$\psi$ - $\psi_{d}$','Location', 'northeast', 'Interpreter', 'latex','fontsize',14);
 legend('box','off');
-
-% save all figures
-hf = get(0,'children');
-hf = flipud(hf);
-for ix=1:length(hf)
-    set(hf(ix),'Units','centimeters');
-    pos = get(hf(ix),'Position');
-    set(hf(ix),'PaperPositionMode','Auto',...
-        'PaperUnits','centimeters','PaperSize',[pos(3), pos(4)]);
-    figurename = ['image_sin\' 'fig' num2str(ix)];
-    print(hf(ix), figurename, '-dpng', '-vector');
-end
+% % 
+% %save all figures
+% hf = get(0,'children');
+% hf = flipud(hf);
+% for ix=1:length(hf)
+%     set(hf(ix),'Units','centimeters');
+%     pos = get(hf(ix),'Position');
+%     set(hf(ix),'PaperPositionMode','Auto',...
+%         'PaperUnits','centimeters','PaperSize',[pos(3), pos(4)]);
+%     figurename = ['image_sin\' 'fig' num2str(ix)];
+%     print(hf(ix), figurename, '-dpng', '-vector');
+% end
